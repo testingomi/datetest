@@ -1,31 +1,40 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-NPBRLVQVRD"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-NPBRLVQVRD');
-</script>
+    <!-- Preconnect to required origins -->
+    <link rel="preconnect" href="https://www.googletagmanager.com">
+    <link rel="preconnect" href="https://www.google-analytics.com">
+    <link rel="preconnect" href="https://static.cloudflareinsights.com">
+    
+    <!-- Defer non-critical scripts -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-NPBRLVQVRD"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-NPBRLVQVRD', {
+        send_page_view: false // Defer page view until after critical content loads
+      });
+    </script>
     <meta name="google-site-verification" content="CwVcdBCT_p7gVlPuKTfrN8SR2ZSzojiHMwQ-WTCU4BU" />
     <meta charset="UTF-8" />
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignal.page.js" defer></script>
+    <script defer src="https://cdn.onesignal.com/sdks/web/v16/OneSignal.page.js"></script>
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
     </script>
     <link rel="icon" type="image/png" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-     <!-- Primary Meta Tags -->
+    <!-- Primary Meta Tags -->
     <title>Flintxt | Text-Based Friends & Dating App for Meaningful Conversations</title>
     <meta name="title" content="Flintxt | Text-Based Friends & Dating App for Meaningful Conversations" />
     <meta name="description" content="Flintxt is a unique app where real connections start with real conversations. Make friends or find dates through meaningful text-based chats. No photos, no pressure—just chat and connect." />
     <meta name="keywords" content="flintxt,flin txt, flin text, dating app, friends app, text-based dating, meaningful conversations, online chat, relationships, flintxt.com" />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://flintxt.com/" />
+
+    <!-- Cache control headers -->
+    <meta http-equiv="Cache-Control" content="max-age=31536000, public">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
