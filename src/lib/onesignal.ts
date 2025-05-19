@@ -20,8 +20,23 @@ export async function initializeOneSignal() {
           size: 'medium',
           position: 'bottom-right',
           showCredit: false,
+          prenotify: true,
+          text: {
+            'tip.state.unsubscribed': 'Subscribe to notifications',
+            'tip.state.subscribed': "You're subscribed to notifications",
+            'tip.state.blocked': "You've blocked notifications",
+            'message.prenotify': 'Click to subscribe to notifications',
+            'message.action.subscribed': "Thanks for subscribing!",
+            'message.action.resubscribed': "You're subscribed to notifications",
+            'message.action.unsubscribed': "You won't receive notifications again",
+            'dialog.main.title': 'Manage Notifications',
+            'dialog.main.button.subscribe': 'SUBSCRIBE',
+            'dialog.main.button.unsubscribe': 'UNSUBSCRIBE',
+            'dialog.blocked.title': 'Unblock Notifications',
+            'dialog.blocked.message': "Follow these instructions to allow notifications:"
+          }
         },
-        persistNotification: false,
+        persistNotification: true,
         webhooks: {
           cors: true,
           'notification.displayed': 'https://flintxt.com/notification_displayed',
@@ -35,9 +50,9 @@ export async function initializeOneSignal() {
                 type: "push",
                 autoPrompt: true,
                 text: {
-                  actionMessage: "Would you like to receive notifications for new matches and messages?",
+                  actionMessage: "Get notified about new matches and messages instantly!",
                   acceptButton: "Allow",
-                  cancelButton: "Cancel"
+                  cancelButton: "No Thanks"
                 }
               }
             ]
@@ -64,7 +79,9 @@ export async function initializeOneSignal() {
           // Set initial tags for segmentation
           await OneSignal.User.addTags({
             user_id: data.session.user.id,
-            notifications_enabled: 'true'
+            notifications_enabled: 'true',
+            platform: 'web',
+            app_version: '1.0.0'
           });
         }
       } catch (error) {
@@ -94,7 +111,9 @@ export async function setExternalUserId(userId: string) {
       await OneSignal.User.addTags({
         user_id: userId,
         notifications_enabled: 'true',
-        last_login: new Date().toISOString()
+        last_login: new Date().toISOString(),
+        platform: 'web',
+        app_version: '1.0.0'
       });
     });
     return true;
@@ -114,7 +133,9 @@ export async function subscribeToTopics(userId: string) {
         chats: 'enabled',
         matches: 'enabled',
         letters: 'enabled',
-        user_id: userId
+        user_id: userId,
+        platform: 'web',
+        app_version: '1.0.0'
       });
       console.log('OneSignal: Subscribed to notification topics');
     });

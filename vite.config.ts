@@ -13,6 +13,10 @@ export default defineConfig({
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
           ui: ['lucide-react', 'clsx', 'tailwind-merge'],
+          auth: ['@supabase/supabase-js'],
+          notifications: ['@onesignal/node-onesignal'],
+          forms: ['react-hook-form'],
+          state: ['zustand']
         },
       },
     },
@@ -22,9 +26,12 @@ export default defineConfig({
     terserOptions: {
       compress: {
         drop_console: true,
-        drop_debugger: true
+        drop_debugger: true,
+        pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn']
       }
-    }
+    },
+    reportCompressedSize: false,
+    sourcemap: false
   },
   server: {
     headers: {

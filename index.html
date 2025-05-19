@@ -5,6 +5,7 @@
     <link rel="preconnect" href="https://www.googletagmanager.com">
     <link rel="preconnect" href="https://www.google-analytics.com">
     <link rel="preconnect" href="https://static.cloudflareinsights.com">
+    <link rel="preconnect" href="https://cdn.onesignal.com">
     
     <!-- Defer non-critical scripts -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-NPBRLVQVRD"></script>
@@ -13,7 +14,8 @@
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', 'G-NPBRLVQVRD', {
-        send_page_view: false // Defer page view until after critical content loads
+        send_page_view: false,
+        transport_url: 'https://www.google-analytics.com'
       });
     </script>
     <meta name="google-site-verification" content="CwVcdBCT_p7gVlPuKTfrN8SR2ZSzojiHMwQ-WTCU4BU" />
@@ -64,6 +66,10 @@
       }
     }
     </script>
+
+    <!-- Preload critical assets -->
+    <link rel="preload" href="/favicon.ico" as="image" type="image/x-icon">
+    <link rel="preload" href="https://cdn.onesignal.com/sdks/web/v16/OneSignal.page.js" as="script">
   </head>
   <body>
     <div id="root"></div>
