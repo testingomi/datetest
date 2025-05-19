@@ -24,13 +24,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         },
       });
 
-      if (data.user) {
-        // Phone number update removed
-      }
-
       if (error) throw error;
-      
-      // Only send verification email through initial signup
       return { error: null };
     } catch (error) {
       console.error('Signup error:', error);
@@ -46,17 +40,14 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       if (error) throw error;
 
-      // Check if profile exists and is complete
       if (data.user) {
         try {
-          // Check if profile exists directly
           const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', data.user.id)
             .maybeSingle();
 
-          // If no profile found or error, create an empty one
           if (!profile || profileError) {
             const { error: insertError } = await supabase
               .from('profiles')
@@ -86,29 +77,21 @@ export const useAuthStore = create<AuthState>((set) => ({
             return { error: null };
           }
 
-          if (profileError) {
-            throw profileError;
-          }
-
-          // Redirect to onboarding if profile is missing or incomplete
-          if (!profile || !profile.first_name || !profile.gender) {
+          if (!profile.first_name || !profile.gender) {
             window.location.href = '/onboarding';
             return { error: null };
           }
 
-          // Check and create chat preferences if needed
-          const { data: prefs, error: prefsError } = await supabase
+          const { data: prefs } = await supabase
             .from('chat_preferences')
             .select('*')
             .eq('user_id', data.user.id)
             .maybeSingle();
 
-          if (prefsError) throw prefsError;
-
           if (!prefs) {
-            const { error: createPrefsError } = await supabase
+            await supabase
               .from('chat_preferences')
-              .upsert({
+              .insert({
                 user_id: data.user.id,
                 min_age: 18,
                 max_age: 100,
@@ -116,8 +99,6 @@ export const useAuthStore = create<AuthState>((set) => ({
                 preferred_gender: null,
                 preferred_city: null
               });
-
-            if (createPrefsError) throw createPrefsError;
           }
         } catch (error) {
           console.error('Profile check error:', error);
@@ -132,22 +113,39 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
   signOut: async () => {
-    await supabase.auth.signOut();
-    set({ user: null });
+    try {
+      await supabase.auth.signOut();
+      localStorage.clear(); // Clear all local storage
+      set({ user: null });
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Sign out error:', error);
+      localStorage.clear(); // Force clear storage even if signOut fails
+      set({ user: null });
+      window.location.href = '/';
+    }
   },
 }));
 
 // Initialize auth state
 supabase.auth.getSession().then(({ data: { session } }) => {
-  if (session) {
+  if (session?.user) {
     useAuthStore.getState().setUser(session.user);
   } else {
     useAuthStore.getState().setUser(null);
-    supabase.auth.refreshSession(); // Try to refresh if session exists
+    localStorage.removeItem('supabase.auth.token');
   }
 });
 
 // Listen for auth changes
-supabase.auth.onAuthStateChange((_event, session) => {
-  useAuthStore.getState().setUser(session?.user ?? null);
+supabase.auth.onAuthStateChange(async (event, session) => {
+  if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+    localStorage.clear();
+    useAuthStore.getState().setUser(null);
+    window.location.href = '/';
+  } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+    if (session?.user) {
+      useAuthStore.getState().setUser(session.user);
+    }
+  }
 });
