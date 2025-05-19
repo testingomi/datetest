@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /chat/
+Disallow: /profile/
+Disallow: /match-requests/
+Disallow: /letters/
+
+Sitemap: https://flintxt.com/sitemap.xml
