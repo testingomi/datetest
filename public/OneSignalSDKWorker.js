@@ -25,14 +25,10 @@ self.addEventListener('push', function(event) {
       url: notificationData.url || '/',
       timestamp: new Date().getTime()
     },
-    // Ensure notifications stay visible
     requireInteraction: true,
-    // Use vibration pattern for mobile devices
     vibrate: [200, 100, 200],
-    // Ensure highest priority for the notification
     tag: 'flintxt-notification-' + new Date().getTime(),
     renotify: true,
-    // Add actions
     actions: [
       {
         action: 'open',
@@ -45,7 +41,6 @@ self.addEventListener('push', function(event) {
         icon: '/favicon.ico'
       }
     ],
-    // Add sound
     silent: false,
     sound: 'default'
   };
@@ -64,11 +59,9 @@ self.addEventListener('notificationclick', function(event) {
     return;
   }
   
-  // Get the notification data
   const notificationData = event.notification.data || {};
   const urlToOpen = notificationData.url || '/';
   
-  // This looks to see if the current window is already open and focuses it
   event.waitUntil(
     clients.matchAll({
       type: 'window',
@@ -84,7 +77,6 @@ self.addEventListener('notificationclick', function(event) {
         }
       }
       
-      // If no window is open, open a new one
       if (clients.openWindow) {
         return clients.openWindow(urlToOpen);
       }
@@ -92,7 +84,6 @@ self.addEventListener('notificationclick', function(event) {
   );
 });
 
-// Handle closing of notifications
 self.addEventListener('notificationclose', function(event) {
   console.log('[Service Worker] Notification closed', event);
 });
