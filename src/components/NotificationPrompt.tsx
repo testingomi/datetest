@@ -8,7 +8,8 @@ export default function NotificationPrompt() {
   const { permissionStatus, isPermissionAsked, checkPermission } = useNotificationStore();
 
   useEffect(() => {
-    if (areNotificationsSupported() && permissionStatus !== 'granted' && !isPermissionAsked) {
+    // Only show prompt if notifications are supported and not already granted/denied
+    if (areNotificationsSupported() && permissionStatus === 'default' && !isPermissionAsked) {
       const timer = setTimeout(() => {
         setShowPrompt(true);
       }, 3000);
@@ -19,9 +20,17 @@ export default function NotificationPrompt() {
 
   const handleEnableNotifications = async () => {
     try {
-      await requestNotificationPermission();
+      const granted = await requestNotificationPermission();
       checkPermission(); // Update permission status in store
       setShowPrompt(false);
+      
+      if (granted) {
+        // Show a test notification
+        new Notification('Notifications Enabled!', {
+          body: 'You will now receive notifications for new matches and messages.',
+          icon: '/favicon.ico'
+        });
+      }
     } catch (error) {
       console.error('Error enabling notifications:', error);
       alert('Failed to enable notifications. Please check your browser settings and try again.');

@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 
 // Check if Push API is supported
 export function areNotificationsSupported(): boolean {
-  return 'serviceWorker' in navigator && 'PushManager' in window;
+  return 'Notification' in window;
 }
 
 // Check if notification permission has been granted
@@ -18,8 +18,12 @@ export async function requestNotificationPermission(): Promise<boolean> {
   }
 
   try {
+    // First request notification permission
     const permission = await Notification.requestPermission();
+    
     if (permission === 'granted') {
+      // Register service worker after permission is granted
+      await registerServiceWorker();
       await subscribeToPushNotifications();
       return true;
     }
@@ -50,20 +54,16 @@ function urlBase64ToUint8Array(base64String: string) {
 // Register service worker
 async function registerServiceWorker() {
   try {
-    if (!navigator.serviceWorker) {
+    if (!('serviceWorker' in navigator)) {
       throw new Error('Service Worker API not supported');
     }
 
-    // Unregister any existing service workers first
-    const registrations = await navigator.serviceWorker.getRegistrations();
-    await Promise.all(registrations.map(registration => registration.unregister()));
-
     // Register new service worker
     const registration = await navigator.serviceWorker.register('/service-worker.js');
+    console.log('Service Worker registered successfully');
 
     // Wait for the service worker to be ready
     await navigator.serviceWorker.ready;
-
     return registration;
   } catch (error) {
     console.error('Service Worker registration failed:', error);
@@ -74,12 +74,12 @@ async function registerServiceWorker() {
 // Subscribe to push notifications
 export async function subscribeToPushNotifications(): Promise<boolean> {
   try {
-    if (!areNotificationsSupported()) {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       console.warn('Push notifications are not supported');
       return false;
     }
 
-    const registration = await registerServiceWorker();
+    const registration = await navigator.serviceWorker.ready;
     
     // Unsubscribe from any existing subscriptions
     const existingSubscription = await registration.pushManager.getSubscription();
@@ -107,7 +107,7 @@ export async function subscribeToPushNotifications(): Promise<boolean> {
     return true;
   } catch (error) {
     console.error('Failed to subscribe to push notifications:', error);
-    throw error; // Propagate error for better handling
+    return false;
   }
 }
 
