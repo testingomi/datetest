@@ -20,10 +20,11 @@ export default function NotificationPrompt() {
   const handleEnableNotifications = async () => {
     try {
       await requestNotificationPermission();
+      checkPermission(); // Update permission status in store
       setShowPrompt(false);
     } catch (error) {
       console.error('Error enabling notifications:', error);
-      setShowPrompt(false);
+      alert('Failed to enable notifications. Please check your browser settings and try again.');
     }
   };
 

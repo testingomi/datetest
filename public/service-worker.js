@@ -1,5 +1,8 @@
-// Cache name for static assets
-const CACHE_NAME = 'flintxt-cache-v1';
+// Service Worker Version
+const VERSION = '1.0.0';
+
+// Cache name with version
+const CACHE_NAME = `flintxt-cache-${VERSION}`;
 
 // Assets to cache
 const STATIC_ASSETS = [
@@ -10,6 +13,7 @@ const STATIC_ASSETS = [
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
+  console.log('[ServiceWorker] Installing new service worker version:', VERSION);
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => cache.addAll(STATIC_ASSETS))
@@ -19,23 +23,28 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
+  console.log('[ServiceWorker] Activating new service worker version:', VERSION);
   event.waitUntil(
-    caches.keys()
-      .then((cacheNames) => {
+    Promise.all([
+      caches.keys().then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
             if (cacheName !== CACHE_NAME) {
+              console.log('[ServiceWorker] Removing old cache:', cacheName);
               return caches.delete(cacheName);
             }
           })
         );
-      })
-      .then(() => self.clients.claim())
+      }),
+      self.clients.claim()
+    ])
   );
 });
 
 // Push event handler
 self.addEventListener('push', (event) => {
+  console.log('[ServiceWorker] Push Received:', event);
+
   if (!event.data) return;
 
   let notification;
@@ -58,17 +67,39 @@ self.addEventListener('push', (event) => {
     requireInteraction: true,
     tag: 'flintxt-notification-' + Date.now(),
     renotify: true,
-    data: notification.data || {}
+    data: notification.data || {},
+    actions: [
+      {
+        action: 'open',
+        title: 'Open',
+      },
+      {
+        action: 'close',
+        title: 'Close',
+      }
+    ]
   };
 
   event.waitUntil(
     self.registration.showNotification(notification.title, options)
+      .then(() => {
+        console.log('[ServiceWorker] Notification displayed successfully');
+      })
+      .catch((error) => {
+        console.error('[ServiceWorker] Error showing notification:', error);
+      })
   );
 });
 
 // Notification click event handler
 self.addEventListener('notificationclick', (event) => {
+  console.log('[ServiceWorker] Notification click received:', event);
+
   event.notification.close();
+
+  if (event.action === 'close') {
+    return;
+  }
 
   const urlToOpen = event.notification.data?.url || '/';
 
@@ -78,14 +109,13 @@ self.addEventListener('notificationclick', (event) => {
       includeUncontrolled: true
     })
     .then((clientList) => {
-      // If a window client is available, focus it and navigate
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
           client.focus();
           return client.navigate(urlToOpen);
         }
       }
-      // If no window client is available, open a new window
+      
       if (clients.openWindow) {
         return clients.openWindow(urlToOpen);
       }
@@ -98,17 +128,23 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Clone the response before caching
-        const responseToCache = response.clone();
-        
-        // Cache successful GET requests
-        if (event.request.method === 'GET') {
-          caches.open(CACHE_NAME)
-            .then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
+        // Only cache GET requests
+        if (event.request.method !== 'GET') {
+          return response;
         }
-        
+
+        // Clone the response
+        const responseToCache = response.clone();
+
+        // Cache the response
+        caches.open(CACHE_NAME)
+          .then((cache) => {
+            cache.put(event.request, responseToCache);
+          })
+          .catch((err) => {
+            console.error('[ServiceWorker] Error caching response:', err);
+          });
+
         return response;
       })
       .catch(() => {

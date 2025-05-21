@@ -54,17 +54,12 @@ async function registerServiceWorker() {
       throw new Error('Service Worker API not supported');
     }
 
-    // First check if there's an existing registration
-    const existingRegistration = await navigator.serviceWorker.getRegistration();
-    
-    if (existingRegistration) {
-      return existingRegistration;
-    }
+    // Unregister any existing service workers first
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map(registration => registration.unregister()));
 
-    // If no existing registration, register new service worker
-    const registration = await navigator.serviceWorker.register('/service-worker.js', {
-      scope: '/'
-    });
+    // Register new service worker
+    const registration = await navigator.serviceWorker.register('/service-worker.js');
 
     // Wait for the service worker to be ready
     await navigator.serviceWorker.ready;
@@ -86,16 +81,17 @@ export async function subscribeToPushNotifications(): Promise<boolean> {
 
     const registration = await registerServiceWorker();
     
-    // Get existing subscription first
-    let subscription = await registration.pushManager.getSubscription();
-    
-    if (!subscription) {
-      // Create new subscription if none exists
-      subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC_KEY || '')
-      });
+    // Unsubscribe from any existing subscriptions
+    const existingSubscription = await registration.pushManager.getSubscription();
+    if (existingSubscription) {
+      await existingSubscription.unsubscribe();
     }
+
+    // Create new subscription
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC_KEY || '')
+    });
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
@@ -111,7 +107,7 @@ export async function subscribeToPushNotifications(): Promise<boolean> {
     return true;
   } catch (error) {
     console.error('Failed to subscribe to push notifications:', error);
-    return false;
+    throw error; // Propagate error for better handling
   }
 }
 
