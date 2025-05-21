@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 
 // Check if Push API is supported
-export function areNotificationsSupported(): boolean {
+export function isPushSupported(): boolean {
   return 'serviceWorker' in navigator && 'PushManager' in window;
 }
 
