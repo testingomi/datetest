@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 
 // Check if Push API is supported
 export function areNotificationsSupported(): boolean {
-  return 'Notification' in window;
+  return 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
 }
 
 // Check if notification permission has been granted
@@ -68,7 +68,9 @@ async function registerServiceWorker() {
     }
 
     // Register new service worker
-    const registration = await navigator.serviceWorker.register('/service-worker.js');
+    const registration = await navigator.serviceWorker.register('/service-worker.js', {
+      scope: '/'
+    });
     console.log('Service Worker registered successfully');
 
     // Wait for the service worker to be ready
@@ -84,7 +86,7 @@ async function registerServiceWorker() {
 export async function subscribeToPushNotifications(): Promise<boolean> {
   try {
     // Check if push is supported
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    if (!areNotificationsSupported()) {
       console.warn('Push notifications are not supported');
       return false;
     }
@@ -137,16 +139,18 @@ export async function sendNotification(userId: string, title: string, body: stri
     if (error) throw error;
     if (!subscriptions || !subscriptions.length) return;
 
+    const notificationData = {
+      title,
+      body,
+      icon: '/favicon.ico',
+      badge: '/favicon.ico',
+      data: { url }
+    };
+
     const { error: sendError } = await supabase.functions.invoke('send-push', {
       body: {
         subscription: subscriptions[0].subscription,
-        notification: {
-          title,
-          body,
-          icon: '/favicon.ico',
-          badge: '/favicon.ico',
-          data: { url }
-        }
+        notification: notificationData
       }
     });
 

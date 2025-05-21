@@ -45,50 +45,68 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('push', (event) => {
   console.log('[ServiceWorker] Push Received:', event);
 
-  if (!event.data) return;
-
-  let notification;
+  let notificationData;
   try {
-    notification = event.data.json();
-  } catch (e) {
-    notification = {
-      title: 'New Notification',
-      body: event.data.text(),
-      icon: '/favicon.ico',
-      badge: '/favicon.ico'
-    };
-  }
-
-  const options = {
-    ...notification,
-    icon: notification.icon || '/favicon.ico',
-    badge: notification.badge || '/favicon.ico',
-    vibrate: [200, 100, 200],
-    requireInteraction: true,
-    tag: 'flintxt-notification-' + Date.now(),
-    renotify: true,
-    data: notification.data || {},
-    actions: [
-      {
-        action: 'open',
-        title: 'Open',
-      },
-      {
-        action: 'close',
-        title: 'Close',
+    if (event.data) {
+      // Try to parse as JSON first
+      try {
+        notificationData = event.data.json();
+      } catch (e) {
+        // If JSON parsing fails, use text as fallback
+        const text = event.data.text();
+        notificationData = {
+          title: 'New Notification',
+          body: text,
+          icon: '/favicon.ico',
+          badge: '/favicon.ico'
+        };
       }
-    ]
-  };
+    } else {
+      notificationData = {
+        title: 'New Notification',
+        body: 'You have a new notification',
+        icon: '/favicon.ico',
+        badge: '/favicon.ico'
+      };
+    }
 
-  event.waitUntil(
-    self.registration.showNotification(notification.title, options)
-      .then(() => {
-        console.log('[ServiceWorker] Notification displayed successfully');
-      })
-      .catch((error) => {
-        console.error('[ServiceWorker] Error showing notification:', error);
-      })
-  );
+    const options = {
+      body: notificationData.body,
+      icon: notificationData.icon || '/favicon.ico',
+      badge: notificationData.badge || '/favicon.ico',
+      data: notificationData.data || {},
+      requireInteraction: true,
+      vibrate: [200, 100, 200],
+      tag: 'flintxt-notification-' + Date.now(),
+      renotify: true,
+      actions: [
+        {
+          action: 'open',
+          title: 'Open',
+          icon: '/favicon.ico'
+        },
+        {
+          action: 'close',
+          title: 'Close',
+          icon: '/favicon.ico'
+        }
+      ],
+      silent: false,
+      sound: 'default'
+    };
+
+    event.waitUntil(
+      self.registration.showNotification(notificationData.title, options)
+        .then(() => {
+          console.log('[ServiceWorker] Notification displayed successfully');
+        })
+        .catch((error) => {
+          console.error('[ServiceWorker] Error showing notification:', error);
+        })
+    );
+  } catch (error) {
+    console.error('[ServiceWorker] Error processing push event:', error);
+  }
 });
 
 // Notification click event handler
