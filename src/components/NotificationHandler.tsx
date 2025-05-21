@@ -2,11 +2,7 @@ import React, { useEffect } from 'react';
 import { useAuthStore } from '../store/auth';
 import { useNotificationStore } from '../store/notification';
 import { supabase } from '../lib/supabase';
-import {  areNotificationsSupported,
-  hasNotificationPermission,
-  requestNotificationPermission,
-  subscribeToPushNotifications,
-  sendNotification } from '../lib/notification';
+import { areNotificationsSupported, hasNotificationPermission, requestNotificationPermission, subscribeToPushNotifications, sendNotification } from '../lib/notification';
 
 export default function NotificationHandler() {
   const { user } = useAuthStore();
@@ -101,7 +97,7 @@ export default function NotificationHandler() {
       .subscribe();
 
     // Check if push notifications are supported and request permission
-    if (isPushSupported()) {
+    if (areNotificationsSupported()) {
       subscribeToPushNotifications();
     }
 
