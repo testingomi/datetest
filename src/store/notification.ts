@@ -12,6 +12,7 @@ interface NotificationState {
   unreadMessages: number;
   unreadLetters: number;
   totalUnread: number;
+  chatNotifications: Record<string, number>;
 
   // Functions to check and update permissions
   checkPermission: () => void;
@@ -27,6 +28,12 @@ interface NotificationState {
   incrementUnreadMatches: (amount?: number) => void;
   incrementUnreadMessages: (amount?: number) => void;
   incrementUnreadLetters: (amount?: number) => void;
+  
+  // Chat-specific notification functions
+  setChatNotifications: (chatId: string, count: number) => void;
+  incrementChatNotifications: (chatId: string) => void;
+  resetChatNotifications: (chatId: string) => void;
+  resetAllChatNotifications: () => void;
 }
 
 export const useNotificationStore = create<NotificationState>((set, get) => ({
@@ -38,6 +45,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   unreadMessages: 0,
   unreadLetters: 0,
   totalUnread: 0,
+  chatNotifications: {},
   
   // Check current notification permission
   checkPermission: () => {
@@ -127,6 +135,66 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     set(state => ({
       unreadLetters: state.unreadLetters + amount,
       totalUnread: state.unreadMatches + state.unreadMessages + state.unreadLetters + amount
+    }));
+  },
+
+  // Chat-specific notification functions
+  setChatNotifications: (chatId, count) => {
+    set(state => {
+      const newChatNotifications = {
+        ...state.chatNotifications,
+        [chatId]: count
+      };
+      
+      // Calculate total unread messages
+      const totalMessages = Object.values(newChatNotifications).reduce((sum, count) => sum + count, 0);
+      
+      return {
+        chatNotifications: newChatNotifications,
+        unreadMessages: totalMessages,
+        totalUnread: state.unreadMatches + totalMessages + state.unreadLetters
+      };
+    });
+  },
+
+  incrementChatNotifications: (chatId) => {
+    set(state => {
+      const currentCount = state.chatNotifications[chatId] || 0;
+      const newChatNotifications = {
+        ...state.chatNotifications,
+        [chatId]: currentCount + 1
+      };
+      
+      const totalMessages = Object.values(newChatNotifications).reduce((sum, count) => sum + count, 0);
+      
+      return {
+        chatNotifications: newChatNotifications,
+        unreadMessages: totalMessages,
+        totalUnread: state.unreadMatches + totalMessages + state.unreadLetters
+      };
+    });
+  },
+
+  resetChatNotifications: (chatId) => {
+    set(state => {
+      const newChatNotifications = { ...state.chatNotifications };
+      delete newChatNotifications[chatId];
+      
+      const totalMessages = Object.values(newChatNotifications).reduce((sum, count) => sum + count, 0);
+      
+      return {
+        chatNotifications: newChatNotifications,
+        unreadMessages: totalMessages,
+        totalUnread: state.unreadMatches + totalMessages + state.unreadLetters
+      };
+    });
+  },
+
+  resetAllChatNotifications: () => {
+    set(state => ({
+      chatNotifications: {},
+      unreadMessages: 0,
+      totalUnread: state.unreadMatches + state.unreadLetters
     }));
   }
 }));

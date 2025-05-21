@@ -6,7 +6,13 @@ import { areNotificationsSupported, hasNotificationPermission, requestNotificati
 
 export default function NotificationHandler() {
   const { user } = useAuthStore();
-  const { checkPermission } = useNotificationStore();
+  const { 
+    checkPermission, 
+    incrementUnreadMatches,
+    incrementUnreadMessages,
+    incrementUnreadLetters,
+    incrementChatNotifications
+  } = useNotificationStore();
 
   useEffect(() => {
     if (!user) return;
@@ -21,6 +27,7 @@ export default function NotificationHandler() {
         filter: `user2_id=eq.${user.id}`,
       }, async (payload) => {
         if (payload.new.status === 'pending_request') {
+          incrementUnreadMatches();
           try {
             const { data: sender } = await supabase
               .from('profiles')
@@ -32,7 +39,13 @@ export default function NotificationHandler() {
               user.id,
               'New Match Request',
               sender ? `${sender.first_name} wants to connect with you!` : 'Someone wants to connect with you!',
-              '/match-requests'
+              '/match-requests',
+              {
+                tag: 'match_request',
+                requireInteraction: true,
+                renotify: true,
+                silent: false
+              }
             );
           } catch (error) {
             console.error('Error sending match notification:', error);
@@ -49,6 +62,9 @@ export default function NotificationHandler() {
         table: 'chat_messages',
       }, async (payload) => {
         if (payload.new.receiver_id === user.id) {
+          incrementUnreadMessages();
+          incrementChatNotifications(payload.new.match_id);
+          
           try {
             const { data: sender } = await supabase
               .from('profiles')
@@ -60,7 +76,13 @@ export default function NotificationHandler() {
               user.id,
               'New Message',
               sender ? `${sender.first_name} sent you a message` : 'You have a new message',
-              '/chat'
+              '/chat',
+              {
+                tag: `chat_${payload.new.match_id}`,
+                requireInteraction: false,
+                renotify: true,
+                silent: false
+              }
             );
           } catch (error) {
             console.error('Error sending message notification:', error);
@@ -77,6 +99,7 @@ export default function NotificationHandler() {
         table: 'letters',
         filter: `recipient_id=eq.${user.id}`,
       }, async (payload) => {
+        incrementUnreadLetters();
         try {
           const { data: sender } = await supabase
             .from('profiles')
@@ -88,7 +111,13 @@ export default function NotificationHandler() {
             user.id,
             'New Letter',
             sender ? `${sender.first_name} sent you a letter` : 'Someone sent you a letter',
-            '/letters'
+            '/letters',
+            {
+              tag: 'letter',
+              requireInteraction: true,
+              renotify: true,
+              silent: false
+            }
           );
         } catch (error) {
           console.error('Error sending letter notification:', error);

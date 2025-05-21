@@ -25,7 +25,10 @@ export async function requestNotificationPermission(): Promise<boolean> {
       // Show welcome notification
       new Notification('Notifications Enabled!', {
         body: 'You will now receive notifications for new matches and messages.',
-        icon: '/favicon.ico'
+        icon: '/favicon.ico',
+        tag: 'welcome',
+        requireInteraction: false,
+        silent: false
       });
       
       // Only try to subscribe to push if user is authenticated
@@ -69,8 +72,10 @@ async function registerServiceWorker() {
 
     // Register new service worker
     const registration = await navigator.serviceWorker.register('/service-worker.js', {
-      scope: '/'
+      scope: '/',
+      updateViaCache: 'none'
     });
+    
     console.log('Service Worker registered successfully');
 
     // Wait for the service worker to be ready
@@ -129,7 +134,18 @@ export async function subscribeToPushNotifications(): Promise<boolean> {
 }
 
 // Send a notification
-export async function sendNotification(userId: string, title: string, body: string, url: string) {
+export async function sendNotification(
+  userId: string, 
+  title: string, 
+  body: string, 
+  url: string,
+  options: { 
+    tag?: string;
+    requireInteraction?: boolean;
+    renotify?: boolean;
+    silent?: boolean;
+  } = {}
+) {
   try {
     const { data: subscriptions, error } = await supabase
       .from('push_subscriptions')
@@ -144,7 +160,18 @@ export async function sendNotification(userId: string, title: string, body: stri
       body,
       icon: '/favicon.ico',
       badge: '/favicon.ico',
-      data: { url }
+      data: { url },
+      tag: options.tag || 'default',
+      requireInteraction: options.requireInteraction ?? true,
+      renotify: options.renotify ?? true,
+      silent: options.silent ?? false,
+      actions: [
+        {
+          action: 'open',
+          title: 'Open',
+          icon: '/favicon.ico'
+        }
+      ]
     };
 
     const { error: sendError } = await supabase.functions.invoke('send-push', {
