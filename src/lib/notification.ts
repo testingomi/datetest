@@ -1,16 +1,16 @@
 import { supabase } from './supabase';
 
-// ✅ Check if Push API is supported
+// Check if Push API is supported
 export function areNotificationsSupported(): boolean {
   return 'serviceWorker' in navigator && 'PushManager' in window;
 }
 
-// ✅ Check if notification permission has been granted
+// Check if notification permission has been granted
 export function hasNotificationPermission(): boolean {
   return areNotificationsSupported() && Notification.permission === 'granted';
 }
 
-// ✅ Request notification permission
+// Request notification permission
 export async function requestNotificationPermission(): Promise<boolean> {
   if (!areNotificationsSupported()) {
     console.warn('Notifications are not supported in this browser');
@@ -25,12 +25,12 @@ export async function requestNotificationPermission(): Promise<boolean> {
     }
     return false;
   } catch (error) {
-    console.error('Error requesting notification permission', error);
+    console.error('Error requesting notification permission:', error);
     return false;
   }
 }
 
-// ✅ Convert a base64 string to Uint8Array
+// Convert a base64 string to Uint8Array
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
   const base64 = (base64String + padding)
@@ -47,18 +47,36 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray;
 }
 
-// ✅ Register service worker
+// Register service worker
 async function registerServiceWorker() {
   try {
-    const registration = await navigator.serviceWorker.register('service-worker.js');
+    if (!navigator.serviceWorker) {
+      throw new Error('Service Worker API not supported');
+    }
+
+    // First check if there's an existing registration
+    const existingRegistration = await navigator.serviceWorker.getRegistration();
+    
+    if (existingRegistration) {
+      return existingRegistration;
+    }
+
+    // If no existing registration, register new service worker
+    const registration = await navigator.serviceWorker.register('/service-worker.js', {
+      scope: '/'
+    });
+
+    // Wait for the service worker to be ready
+    await navigator.serviceWorker.ready;
+
     return registration;
   } catch (error) {
-    console.error('Service Worker registration failed', error);
+    console.error('Service Worker registration failed:', error);
     throw error;
   }
 }
 
-// ✅ Subscribe to push notifications
+// Subscribe to push notifications
 export async function subscribeToPushNotifications(): Promise<boolean> {
   try {
     if (!areNotificationsSupported()) {
@@ -67,14 +85,19 @@ export async function subscribeToPushNotifications(): Promise<boolean> {
     }
 
     const registration = await registerServiceWorker();
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC_KEY || '')
-    });
+    
+    // Get existing subscription first
+    let subscription = await registration.pushManager.getSubscription();
+    
+    if (!subscription) {
+      // Create new subscription if none exists
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC_KEY || '')
+      });
+    }
 
-    const { data, error: authError } = await supabase.auth.getUser();
-    const user = data?.user;
-
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
     const { error } = await supabase
@@ -87,12 +110,12 @@ export async function subscribeToPushNotifications(): Promise<boolean> {
     if (error) throw error;
     return true;
   } catch (error) {
-    console.error('Failed to subscribe to push notifications', error);
+    console.error('Failed to subscribe to push notifications:', error);
     return false;
   }
 }
 
-// ✅ Send a notification
+// Send a notification
 export async function sendNotification(userId: string, title: string, body: string, url: string) {
   try {
     const { data: subscriptions, error } = await supabase
@@ -109,8 +132,8 @@ export async function sendNotification(userId: string, title: string, body: stri
         notification: {
           title,
           body,
-          icon: 'favicon.ico',
-          badge: 'favicon.ico',
+          icon: '/favicon.ico',
+          badge: '/favicon.ico',
           data: { url }
         }
       }
@@ -118,6 +141,6 @@ export async function sendNotification(userId: string, title: string, body: stri
 
     if (sendError) throw sendError;
   } catch (error) {
-    console.error('Error sending notification', error);
+    console.error('Error sending notification:', error);
   }
 }

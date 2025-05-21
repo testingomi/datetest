@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@onesignal/node-onesignal": "^5.0.0-alpha-02",
     "@supabase/supabase-js": "^2.39.7",
     "bootstrap": "^5.3.3",
     "clsx": "^2.1.0",
