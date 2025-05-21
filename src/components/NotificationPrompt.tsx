@@ -1,23 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Bell, BellOff, Info } from 'lucide-react';
-import { 
-  areNotificationsSupported, 
-  requestNotificationPermission 
-} from '../lib/notification';
+import { Bell } from 'lucide-react';
+import { areNotificationsSupported, requestNotificationPermission } from '../lib/notification';
 import { useNotificationStore } from '../store/notification';
 
 export default function NotificationPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
-  const { permissionStatus, isPermissionAsked, checkPermission, requestPermission } = useNotificationStore();
+  const { permissionStatus, isPermissionAsked, checkPermission } = useNotificationStore();
 
   useEffect(() => {
-    // Check if notifications are supported and not yet granted
-    if (
-      areNotificationsSupported() && 
-      permissionStatus !== 'granted' && 
-      !isPermissionAsked
-    ) {
-      // Wait a bit before showing the prompt to not overwhelm the user right away
+    if (areNotificationsSupported() && permissionStatus !== 'granted' && !isPermissionAsked) {
       const timer = setTimeout(() => {
         setShowPrompt(true);
       }, 3000);
@@ -28,48 +19,15 @@ export default function NotificationPrompt() {
 
   const handleEnableNotifications = async () => {
     try {
-      const granted = await requestPermission();
-      if (granted) {
-        // If permission is granted, try to verify OneSignal is working
-        console.log('Push notification permission granted');
-        
-        // Explicitly log to console that we're setting up OneSignal
-        console.log('Setting up OneSignal after permission granted');
-        
-        // Check if OneSignal is available
-        if (window.OneSignal) {
-          console.log('OneSignal is available in global scope');
-          
-          // Force a re-registration with OneSignal
-          await window.OneSignalDeferred.push(async (OneSignal) => {
-            try {
-              const pushId = await OneSignal.getUserId();
-              console.log('OneSignal user ID:', pushId);
-              
-              if (!pushId) {
-                console.log('No OneSignal user ID, attempting to register');
-                await OneSignal.registerForPushNotifications();
-              }
-            } catch (error) {
-              console.error('Error registering with OneSignal:', error);
-            }
-          });
-        }
-      }
+      await requestNotificationPermission();
       setShowPrompt(false);
     } catch (error) {
-      console.error('Error requesting notification permission:', error);
+      console.error('Error enabling notifications:', error);
       setShowPrompt(false);
     }
   };
 
-  const handleDismiss = () => {
-    setShowPrompt(false);
-  };
-
-  if (!showPrompt) {
-    return null;
-  }
+  if (!showPrompt) return null;
 
   return (
     <div className="fixed bottom-4 right-4 left-4 sm:left-auto sm:right-4 sm:max-w-sm z-50 animate-slide-up">
@@ -94,7 +52,7 @@ export default function NotificationPrompt() {
               </button>
               
               <button
-                onClick={handleDismiss}
+                onClick={() => setShowPrompt(false)}
                 className="text-sm px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg flex items-center justify-center gap-1.5 hover:bg-gray-200 transition-colors"
               >
                 Not Now

@@ -1,8 +1,33 @@
 import { supabase } from './supabase';
 
 // Check if Push API is supported
-export function isPushSupported(): boolean {
+export function areNotificationsSupported(): boolean {
   return 'serviceWorker' in navigator && 'PushManager' in window;
+}
+
+// Check if notification permission has been granted
+export function hasNotificationPermission(): boolean {
+  return areNotificationsSupported() && Notification.permission === 'granted';
+}
+
+// Request notification permission
+export async function requestNotificationPermission(): Promise<boolean> {
+  if (!areNotificationsSupported()) {
+    console.warn('Notifications are not supported in this browser');
+    return false;
+  }
+
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      await subscribeToPushNotifications();
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error requesting notification permission:', error);
+    return false;
+  }
 }
 
 // Convert a base64 string to Uint8Array
@@ -33,9 +58,9 @@ async function registerServiceWorker() {
 }
 
 // Subscribe to push notifications
-export async function subscribeToPushNotifications(): Promise<boolean> {
+async function subscribeToPushNotifications(): Promise<boolean> {
   try {
-    if (!isPushSupported()) {
+    if (!areNotificationsSupported()) {
       console.warn('Push notifications are not supported');
       return false;
     }
@@ -43,7 +68,7 @@ export async function subscribeToPushNotifications(): Promise<boolean> {
     const registration = await registerServiceWorker();
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array('YOUR_VAPID_PUBLIC_KEY')
+      applicationServerKey: urlBase64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC_KEY || '')
     });
 
     // Save subscription to database
@@ -76,7 +101,7 @@ export async function sendNotification(userId: string, title: string, body: stri
     if (error) throw error;
     if (!subscriptions?.length) return;
 
-    // Call your edge function to send the notification
+    // Call edge function to send the notification
     const { error: sendError } = await supabase.functions.invoke('send-push', {
       body: {
         subscription: subscriptions[0].subscription,
