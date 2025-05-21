@@ -22,9 +22,18 @@ export async function requestNotificationPermission(): Promise<boolean> {
     const permission = await Notification.requestPermission();
     
     if (permission === 'granted') {
-      // Register service worker after permission is granted
-      await registerServiceWorker();
-      await subscribeToPushNotifications();
+      // Show welcome notification
+      new Notification('Notifications Enabled!', {
+        body: 'You will now receive notifications for new matches and messages.',
+        icon: '/favicon.ico'
+      });
+      
+      // Only try to subscribe to push if user is authenticated
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await registerServiceWorker();
+        await subscribeToPushNotifications();
+      }
       return true;
     }
     return false;
@@ -74,8 +83,16 @@ async function registerServiceWorker() {
 // Subscribe to push notifications
 export async function subscribeToPushNotifications(): Promise<boolean> {
   try {
+    // Check if push is supported
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       console.warn('Push notifications are not supported');
+      return false;
+    }
+
+    // Check authentication
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.warn('User must be authenticated to subscribe to push notifications');
       return false;
     }
 
@@ -93,9 +110,7 @@ export async function subscribeToPushNotifications(): Promise<boolean> {
       applicationServerKey: urlBase64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC_KEY || '')
     });
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
-
+    // Save subscription to database
     const { error } = await supabase
       .from('push_subscriptions')
       .upsert({

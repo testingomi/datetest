@@ -2,35 +2,32 @@ import React, { useEffect, useState } from 'react';
 import { Bell } from 'lucide-react';
 import { areNotificationsSupported, requestNotificationPermission } from '../lib/notification';
 import { useNotificationStore } from '../store/notification';
+import { useAuthStore } from '../store/auth';
 
 export default function NotificationPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
   const { permissionStatus, isPermissionAsked, checkPermission } = useNotificationStore();
+  const { user } = useAuthStore();
 
   useEffect(() => {
-    // Only show prompt if notifications are supported and not already granted/denied
-    if (areNotificationsSupported() && permissionStatus === 'default' && !isPermissionAsked) {
+    // Only show prompt if notifications are supported, not granted/denied, and user is authenticated
+    if (areNotificationsSupported() && 
+        permissionStatus === 'default' && 
+        !isPermissionAsked && 
+        user) {
       const timer = setTimeout(() => {
         setShowPrompt(true);
       }, 3000);
       
       return () => clearTimeout(timer);
     }
-  }, [permissionStatus, isPermissionAsked]);
+  }, [permissionStatus, isPermissionAsked, user]);
 
   const handleEnableNotifications = async () => {
     try {
       const granted = await requestNotificationPermission();
       checkPermission(); // Update permission status in store
       setShowPrompt(false);
-      
-      if (granted) {
-        // Show a test notification
-        new Notification('Notifications Enabled!', {
-          body: 'You will now receive notifications for new matches and messages.',
-          icon: '/favicon.ico'
-        });
-      }
     } catch (error) {
       console.error('Error enabling notifications:', error);
       alert('Failed to enable notifications. Please check your browser settings and try again.');
