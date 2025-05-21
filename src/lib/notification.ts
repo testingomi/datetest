@@ -120,3 +120,5 @@ export async function sendNotification(userId: string, title: string, body: stri
     console.error('Error sending notification:', error);
   }
 }
+
+export { subscribeToPushNotifications }
