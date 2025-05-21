@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { Suspense } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/auth';
 import Layout from './components/Layout';
 import ActivationCheck from './components/ActivationCheck';
@@ -25,7 +25,6 @@ import Report from "./pages/Report";
 import Contact from './pages/Contact';
 import PaymentVerification from './pages/Onboarding/PaymentVerification';
 
-
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuthStore();
 
@@ -46,34 +45,40 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
 
 function App() {
   return (
-    <Router>
+    <>
       <NotificationHandler />
       <NotificationPrompt />
-      <Routes>
-        {/* Public routes */}
-        <Route path="/" element={<Welcome />} />
-        <Route path="/about" element={<AboutUs />} />
-        <Route path="/terms" element={<Terms />} />
-        <Route path="/privacy" element={<Privacy />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/refunds" element={<Refunds />} />
-        <Route path="/how-to-use" element={<HowToUse />} />
-        <Route path="/report" element={<Report />} />
-        <Route path="/contact" element={<Contact />} />
+      <Suspense fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
+        </div>
+      }>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<Welcome />} />
+          <Route path="/about" element={<AboutUs />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/refunds" element={<Refunds />} />
+          <Route path="/how-to-use" element={<HowToUse />} />
+          <Route path="/report" element={<Report />} />
+          <Route path="/contact" element={<Contact />} />
 
-        {/* Protected routes */}
-        <Route path="/onboarding" element={<PrivateRoute><Onboarding /></PrivateRoute>} />
-        <Route path="/payment-verification" element={<PrivateRoute><PaymentVerification /></PrivateRoute>} />
-        <Route path="/swipe" element={<PrivateRoute><Swipe /></PrivateRoute>} />
-        <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
-        <Route path="/chat" element={<PrivateRoute><Chat /></PrivateRoute>} />
-        <Route path="/letters" element={<PrivateRoute><Letters /></PrivateRoute>} />
-        <Route path="/daily-question" element={<PrivateRoute><DailyQuestion /></PrivateRoute>} />
-        <Route path="/match-requests" element={<PrivateRoute><MatchRequests /></PrivateRoute>} />
-      </Routes>
-    </Router>
+          {/* Protected routes */}
+          <Route path="/onboarding" element={<PrivateRoute><Onboarding /></PrivateRoute>} />
+          <Route path="/payment-verification" element={<PrivateRoute><PaymentVerification /></PrivateRoute>} />
+          <Route path="/swipe" element={<PrivateRoute><Swipe /></PrivateRoute>} />
+          <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+          <Route path="/chat" element={<PrivateRoute><Chat /></PrivateRoute>} />
+          <Route path="/letters" element={<PrivateRoute><Letters /></PrivateRoute>} />
+          <Route path="/daily-question" element={<PrivateRoute><DailyQuestion /></PrivateRoute>} />
+          <Route path="/match-requests" element={<PrivateRoute><MatchRequests /></PrivateRoute>} />
+        </Routes>
+      </Suspense>
+    </>
   );
 }
 
