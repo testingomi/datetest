@@ -1,16 +1,16 @@
 import { supabase } from './supabase';
 
-// Check if Push API is supported
+// ✅ Check if Push API is supported
 export function areNotificationsSupported(): boolean {
   return 'serviceWorker' in navigator && 'PushManager' in window;
 }
 
-// Check if notification permission has been granted
+// ✅ Check if notification permission has been granted
 export function hasNotificationPermission(): boolean {
   return areNotificationsSupported() && Notification.permission === 'granted';
 }
 
-// Request notification permission
+// ✅ Request notification permission
 export async function requestNotificationPermission(): Promise<boolean> {
   if (!areNotificationsSupported()) {
     console.warn('Notifications are not supported in this browser');
@@ -25,16 +25,16 @@ export async function requestNotificationPermission(): Promise<boolean> {
     }
     return false;
   } catch (error) {
-    console.error('Error requesting notification permission:', error);
+    console.error('Error requesting notification permission', error);
     return false;
   }
 }
 
-// Convert a base64 string to Uint8Array
+// ✅ Convert a base64 string to Uint8Array
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
   const base64 = (base64String + padding)
-    .replace(/\-/g, '+')
+    .replace(/-/g, '+')
     .replace(/_/g, '/');
 
   const rawData = window.atob(base64);
@@ -43,22 +43,23 @@ function urlBase64ToUint8Array(base64String: string) {
   for (let i = 0; i < rawData.length; ++i) {
     outputArray[i] = rawData.charCodeAt(i);
   }
+
   return outputArray;
 }
 
-// Register service worker
+// ✅ Register service worker
 async function registerServiceWorker() {
   try {
-    const registration = await navigator.serviceWorker.register('/service-worker.js');
+    const registration = await navigator.serviceWorker.register('service-worker.js');
     return registration;
   } catch (error) {
-    console.error('Service Worker registration failed:', error);
+    console.error('Service Worker registration failed', error);
     throw error;
   }
 }
 
-// Subscribe to push notifications
-async function subscribeToPushNotifications(): Promise<boolean> {
+// ✅ Subscribe to push notifications
+export async function subscribeToPushNotifications(): Promise<boolean> {
   try {
     if (!areNotificationsSupported()) {
       console.warn('Push notifications are not supported');
@@ -71,8 +72,9 @@ async function subscribeToPushNotifications(): Promise<boolean> {
       applicationServerKey: urlBase64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC_KEY || '')
     });
 
-    // Save subscription to database
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data, error: authError } = await supabase.auth.getUser();
+    const user = data?.user;
+
     if (!user) throw new Error('User not authenticated');
 
     const { error } = await supabase
@@ -85,13 +87,13 @@ async function subscribeToPushNotifications(): Promise<boolean> {
     if (error) throw error;
     return true;
   } catch (error) {
-    console.error('Failed to subscribe to push notifications:', error);
+    console.error('Failed to subscribe to push notifications', error);
     return false;
   }
 }
 
-// Send a notification
-export async function sendNotification(userId: string, title: string, body: string, url?: string) {
+// ✅ Send a notification
+export async function sendNotification(userId: string, title: string, body: string, url: string) {
   try {
     const { data: subscriptions, error } = await supabase
       .from('push_subscriptions')
@@ -99,17 +101,16 @@ export async function sendNotification(userId: string, title: string, body: stri
       .eq('user_id', userId);
 
     if (error) throw error;
-    if (!subscriptions?.length) return;
+    if (!subscriptions || !subscriptions.length) return;
 
-    // Call edge function to send the notification
     const { error: sendError } = await supabase.functions.invoke('send-push', {
       body: {
         subscription: subscriptions[0].subscription,
         notification: {
           title,
           body,
-          icon: '/favicon.ico',
-          badge: '/favicon.ico',
+          icon: 'favicon.ico',
+          badge: 'favicon.ico',
           data: { url }
         }
       }
@@ -117,6 +118,6 @@ export async function sendNotification(userId: string, title: string, body: stri
 
     if (sendError) throw sendError;
   } catch (error) {
-    console.error('Error sending notification:', error);
+    console.error('Error sending notification', error);
   }
 }
