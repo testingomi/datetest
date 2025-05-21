@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useAuthStore } from '../store/auth';
 import { useNotificationStore } from '../store/notification';
 import { supabase } from '../lib/supabase';
-import { isPushSupported, subscribeToPushNotifications, sendNotification } from '../lib/notification';
+import { areNotificationsSupported, subscribeToPushNotifications, sendNotification } from '../lib/notification';
 
 export default function NotificationHandler() {
   const { user } = useAuthStore();
