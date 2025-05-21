@@ -7,7 +7,7 @@ export function isPushSupported(): boolean {
 
 // Check if notification permission has been granted
 export function hasNotificationPermission(): boolean {
-  return areNotificationsSupported() && Notification.permission === 'granted';
+  return isPushSupported() && Notification.permission === 'granted';
 }
 
 // Request notification permission
